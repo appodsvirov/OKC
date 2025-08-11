@@ -1,0 +1,62 @@
+﻿@page "/search"
+@using OKC.Core.Models
+@using OKC.Infrastructure.Services
+
+<div class="search-container">
+	<input type="text" @bind="searchQuery" placeholder="Поиск вопросов..." />
+	<button @onclick="Search">Найти</button>
+</div>
+
+<div class="upload-prompt" style="@(hasData ? "display:none;" : "")">
+	<p>Данные не загружены. Пожалуйста, загрузите файлы с вопросами.</p>
+	<button @onclick="GoToUpload" class="btn btn-primary">Загрузить файлы</button>
+</div>
+
+@if (hasData)
+{
+	<div class="search-container">
+		<input type="text" @bind="searchQuery" @bind:event="oninput" 
+		       placeholder="Поиск вопросов..." class="form-control" />
+        
+		@if (isSearching)
+		{
+			<div class="search-loading">
+				<div class="spinner-small"></div>
+			</div>
+		}
+	</div>
+
+	<!-- Результаты поиска -->
+}
+
+@code {
+	[Inject] private ElasticsearchService ElasticService { get; set; }
+	[Inject] private NavigationManager Navigation { get; set; }
+    
+	private string searchQuery;
+	private IEnumerable<Question> results;
+	private bool isSearching;
+	private bool hasData;
+
+	protected override async Task OnInitializedAsync()
+	{
+		// Проверяем, есть ли данные в Elasticsearch
+		var countResponse = await ElasticService.Client.CountAsync<Question>();
+		hasData = countResponse.Count > 0;
+	}
+
+	private async Task Search()
+	{
+		if (string.IsNullOrWhiteSpace(searchQuery)) 
+		{
+			results = null;
+			return;
+		}
+        
+		isSearching = true;
+		results = await ElasticService.SearchAsync(searchQuery);
+		isSearching = false;
+	}
+
+	private void GoToUpload() => Navigation.NavigateTo("/upload");
+}
