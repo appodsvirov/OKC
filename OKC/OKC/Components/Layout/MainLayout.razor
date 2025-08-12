@@ -24,41 +24,42 @@
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
-	An unhandled error has occurred.
-	<a href="." class="reload">Reload</a>
-	<span class="dismiss">🗙</span>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
 </div>
 
 @code {
-	protected override async Task OnInitializedAsync()
-	{
-		var dir = Path.GetFullPath(@"..\..\outputs");
+    protected override async Task OnInitializedAsync()
+    {
+        var dir = Path.GetFullPath(@"..\..\outputs");
 
-		if (!Directory.Exists(dir))
-			return;
+        if (!Directory.Exists(dir))
+            return;
 
-		var tabs = new List<SearchTab>();
+        var tabs = new List<SearchTab>();
 
-		foreach (var file in Directory.GetFiles(dir, "*.json"))
-		{
-			var indexName = "questions_" + Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-			var tab = new SearchTab
-			{
-				FilePath = file,
-				TabTitle = Path.GetFileName(file),
-				IndexName = indexName
-			};
+        foreach (var file in Directory.GetFiles(dir, "*.json"))
+        {
+            var indexName = "questions_" + Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
+            var tab = new SearchTab
+            {
+                FilePath = file,
+                TabTitle = Path.GetFileName(file),
+                IndexName = indexName
+            };
 
-			var json = await File.ReadAllTextAsync(file);
-			var questions = JsonConvert.DeserializeObject<List<Question>>(json);
-			if (questions != null)
-			{
-				await ElasticService.IndexQuestionsAsync(questions, indexName, recreate: true);
-			}
+            var json = await File.ReadAllTextAsync(file);
+            var questions = JsonConvert.DeserializeObject<List<Question>>(json);
+            if (questions != null)
+            {
+                await ElasticService.IndexQuestionsAsync(questions, indexName, recreate: true);
+            }
 
-			tabs.Add(tab);
-		}
+            tabs.Add(tab);
+        }
 
-		SearchTabsState.SetTabs(tabs);
-	}
+        SearchTabsState.SetTabs(tabs);
+
+    }
 }

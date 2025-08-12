@@ -14,13 +14,11 @@ public class SearchTabsState
         Tabs.Clear();
         Tabs.AddRange(tabs);
         ActiveTab = Tabs.FirstOrDefault();
-        NotifyStateChanged();
     }
 
     public void SelectTab(SearchTab tab)
     {
         ActiveTab = tab;
-        NotifyStateChanged();
     }
 
     private void NotifyStateChanged() => OnChange?.Invoke();
