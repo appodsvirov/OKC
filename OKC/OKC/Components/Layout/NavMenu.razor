@@ -1,30 +1,29 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">OKC</a>
-    </div>
-</div>
+﻿@using OKC.Models
+@using OKC.Services
+@inject NavigationManager NavigationManager
+@inject SearchTabsState SearchTabsState
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+@if (SearchTabsState.Tabs.Count == 0)
+{
+	<p>Нет вкладок</p>
+}
+else
+{
+	<div>
+		@foreach (var tab in SearchTabsState.Tabs)
+		{
+			<button class="@(tab == SearchTabsState.ActiveTab ? "active-tab" : "")"
+			        @onclick="() => NavigateToSearch(tab)">
+				@Path.GetFileNameWithoutExtension(tab.TabTitle)
+			</button>
+		}
+	</div>
+}
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
-
+@code {
+	void NavigateToSearch(SearchTab tab)
+	{
+		var encodedTab = Uri.EscapeDataString(tab.TabTitle);
+		NavigationManager.NavigateTo($"/search?tab={encodedTab}");
+	}
+}

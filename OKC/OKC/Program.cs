@@ -1,6 +1,7 @@
 using OKC.Components;
 using OKC.Core.Interfaces;
 using OKC.Infrastructure.Services;
+using OKC.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +14,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<ElasticsearchService>();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IQuestionParser, HtmlQuestionParser>();
-builder.Services.AddScoped<FileProcessingService>();
-
+builder.Services.AddSingleton<SearchTabsState>();
 
 var app = builder.Build();
 

@@ -1,0 +1,139 @@
+﻿@page "/search"
+@page "/search/{TabTitle?}"
+@using OKC.Core.Models
+@using OKC.Infrastructure.Services
+@using OKC.Models
+@using OKC.Services
+@inject SearchTabsState SearchTabsState
+@inject ElasticsearchService ElasticService
+
+@if (SearchTabsState.ActiveTab is null)
+{
+    <p>Выберите вкладку</p>
+}
+else
+{
+    <div>
+        <input value="@SearchTabsState.ActiveTab.SearchQuery"
+               @oninput="OnInput"
+               placeholder="Введите запрос" />
+    </div>
+
+    <div>
+        @if (SearchTabsState.ActiveTab.Results?.Count > 0)
+        {
+            @foreach (var q in SearchTabsState.ActiveTab.Results)
+            {
+                <div style="margin-bottom:12px; padding:6px; border:1px solid #ddd;">
+                    <div><strong>@q.QuestionText</strong></div>
+                    @if (q.Options?.Any() == true)
+                    {
+                        <ul>
+                            @foreach (var opt in q.Options)
+                            {
+                                bool isCorrect = string.Equals(opt.Text, q.CorrectAnswer, StringComparison.OrdinalIgnoreCase);
+                                <li>
+                                    @if (isCorrect)
+                                    {
+                                        <span><strong>(Правильный) @opt.Text</strong></span>
+                                    }
+                                    else
+                                    {
+                                        <span>@opt.Text</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div>Правильный ответ: <strong>@q.CorrectAnswer</strong></div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <p>Нет результатов</p>
+        }
+    </div>
+}
+
+@code {
+    private CancellationTokenSource _debounceCts;
+    [Parameter] public string TabTitle { get; set; }
+
+    protected override void OnParametersSet()
+    {
+	    if (!string.IsNullOrEmpty(TabTitle))
+	    {
+		    var decoded = Uri.UnescapeDataString(TabTitle);
+		    var tab = SearchTabsState.Tabs.FirstOrDefault(t => t.TabTitle == decoded);
+		    if (tab != null)
+		    {
+			    SearchTabsState.SelectTab(tab);
+		    }
+	    }
+	    else if (SearchTabsState.ActiveTab == null && SearchTabsState.Tabs.Count > 0)
+	    {
+		    SearchTabsState.SelectTab(SearchTabsState.Tabs[0]);
+	    }
+    }
+
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        if (SearchTabsState.ActiveTab == null) return;
+
+        SearchTabsState.ActiveTab.SearchQuery = e.Value?.ToString() ?? string.Empty;
+
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        try
+        {
+            await Task.Delay(350, token);
+            await Search(SearchTabsState.ActiveTab);
+        }
+        catch (TaskCanceledException)
+        {
+            // отменено
+        }
+    }
+
+    private async Task Search(SearchTab tab)
+    {
+        if (string.IsNullOrWhiteSpace(tab.SearchQuery))
+        {
+            tab.Results = new List<Question>();
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var results = await ElasticService.SearchAsync(tab.SearchQuery, tab.IndexName);
+            tab.Results = results.ToList();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Search error: " + ex);
+            tab.Results = new List<Question>();
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        SearchTabsState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
+        SearchTabsState.OnChange -= StateHasChanged;
+    }
+}

@@ -7,7 +7,7 @@ namespace OKC.Infrastructure.Services;
 
 public class HtmlQuestionParser : IQuestionParser
 {
-    public IEnumerable<Question> Parse(string htmlContent)
+    public IEnumerable<Question> Parse(string file, string htmlContent)
     {
         var doc = new HtmlDocument();
         doc.LoadHtml(htmlContent);
@@ -16,6 +16,10 @@ public class HtmlQuestionParser : IQuestionParser
 
         // Ищем все контейнеры вопросов
         var questionNodes = doc.DocumentNode.SelectNodes("//div[contains(@class, 'show-question')]");
+        if (questionNodes is null)
+        {
+            Console.WriteLine();
+        }
 
         foreach (var node in questionNodes)
         {
@@ -27,8 +31,11 @@ public class HtmlQuestionParser : IQuestionParser
                     Options = ExtractOptions(node),
                     CorrectAnswer = ExtractCorrectAnswer(node)
                 };
-
-                questions.Add(question);
+                if (!string.IsNullOrEmpty(question.QuestionText) && question.Options.Any() &&
+                    !string.IsNullOrEmpty(question.CorrectAnswer))
+                {
+                    questions.Add(question);
+                }
             }
             catch (Exception ex)
             {

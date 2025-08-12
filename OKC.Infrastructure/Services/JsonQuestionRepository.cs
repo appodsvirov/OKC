@@ -17,7 +17,7 @@ public class JsonQuestionRepository : IQuestionRepository
     public void Save(IEnumerable<Question> questions)
     {
         _questions.AddRange(questions);
-        File.WriteAllText(_filePath, JsonConvert.SerializeObject(_questions));
+        File.WriteAllText(_filePath, JsonConvert.SerializeObject(_questions, Formatting.Indented));
     }
 
     public IEnumerable<Question> GetAll() => _questions;

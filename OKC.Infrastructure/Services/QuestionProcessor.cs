@@ -18,7 +18,7 @@ public class QuestionProcessor
         foreach (var filePath in filePaths)
         {
             var htmlContent = File.ReadAllText(filePath);
-            var questions = _parser.Parse(htmlContent);
+            var questions = _parser.Parse(filePath, htmlContent);
             _repository.Save(questions);
         }
     }
